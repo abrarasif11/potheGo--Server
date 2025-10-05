@@ -25,6 +25,19 @@ async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
+
+    //DB Collections// 
+    const db = client.db('potheGoDB');
+    const parcelCollection = db.collection('parcels');
+
+    // get Parcel // 
+    app.get('/parcels', async (req,res) =>{
+      const parcelCollection = db.collection('parcels')
+    })
+
+
+
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
