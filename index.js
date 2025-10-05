@@ -32,7 +32,8 @@ async function run() {
 
     // get Parcel // 
     app.get('/parcels', async (req,res) =>{
-      const parcelCollection = db.collection('parcels')
+      const parcels = await parcelCollection.find().toArray();
+      res.send(parcels);
     })
 
 
