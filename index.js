@@ -26,18 +26,51 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
-    //DB Collections// 
-    const db = client.db('potheGoDB');
-    const parcelCollection = db.collection('parcels');
+    //DB Collections//
+    const db = client.db("potheGoDB");
+    const parcelCollection = db.collection("parcels");
 
-    // get Parcel // 
-    app.get('/parcels', async (req,res) =>{
+    // get Parcel //
+    app.get("/parcels", async (req, res) => {
       const parcels = await parcelCollection.find().toArray();
       res.send(parcels);
-    })
+    });
 
+    // create a parcel
+    app.post("/parcels", async (req, res) => {
+      try {
+        const newParcel = req.body;
+        const result = await parcelCollection.insertOne(newParcel);
 
+        // Send proper response
+        res.status(201).send({
+          success: true,
+          insertedId: result.insertedId,
+        });
+      } catch (error) {
+        console.error("Error creating parcel:", error);
+        res.status(500).send({ message: "Failed to create parcel" });
+      }
+    });
 
+    // Get all parcels OR parcels created by a specific user
+    app.get("/parcels", async (req, res) => {
+      try {
+        const email = req.query.email; 
+
+        const filter = email ? { createdBy: email } : {};
+
+        const parcels = await parcelCollection
+          .find(filter)
+          .sort({ createdAt: -1 }) 
+          .toArray();
+
+        res.send(parcels);
+      } catch (error) {
+        console.error("Error fetching parcels:", error);
+        res.status(500).send({ message: "Failed to fetch parcels" });
+      }
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
