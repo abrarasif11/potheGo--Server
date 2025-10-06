@@ -4,7 +4,7 @@ const app = express();
 const dotenv = require("dotenv");
 const port = process.env.PORT || 6969;
 require("dotenv").config();
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 dotenv.config();
 // Middlewares
 app.use(cors());
@@ -56,19 +56,39 @@ async function run() {
     // Get all parcels OR parcels created by a specific user
     app.get("/parcels", async (req, res) => {
       try {
-        const email = req.query.email; 
+        const email = req.query.email;
 
         const filter = email ? { createdBy: email } : {};
 
         const parcels = await parcelCollection
           .find(filter)
-          .sort({ createdAt: -1 }) 
+          .sort({ createdAt: -1 })
           .toArray();
 
         res.send(parcels);
       } catch (error) {
         console.error("Error fetching parcels:", error);
         res.status(500).send({ message: "Failed to fetch parcels" });
+      }
+    });
+
+    // Delete a parcel by its ID
+    app.delete("/parcels/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+
+        const query = { _id: new ObjectId(id) };
+
+        const result = await parcelCollection.deleteOne(query);
+
+        if (result.deletedCount === 0) {
+          return res.status(404).send({ message: "Parcel not found" });
+        }
+
+        res.send({ message: "Parcel deleted successfully" });
+      } catch (error) {
+        console.error("Error deleting parcel:", error);
+        res.status(500).send({ message: "Failed to delete parcel" });
       }
     });
 
