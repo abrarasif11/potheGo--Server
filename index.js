@@ -72,7 +72,6 @@ async function run() {
       }
     });
 
-    const { ObjectId } = require("mongodb");
 
     // Get a single parcel by its ID
     app.get("/parcels/:id", async (req, res) => {
@@ -110,6 +109,20 @@ async function run() {
       } catch (error) {
         console.error("Error deleting parcel:", error);
         res.status(500).send({ message: "Failed to delete parcel" });
+      }
+    });
+
+    // payment intent //
+    app.post("/create-payment-intent", async (req, res) => {
+      try {
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: 1000,
+          currency: "usd",
+          payment_method_types: ["card"],
+        });
+        res.json({ clientSecret: paymentIntent.client_secret });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
       }
     });
 
