@@ -116,9 +116,10 @@ async function run() {
 
     // payment intent //
     app.post("/create-payment-intent", async (req, res) => {
+      const amountInCents = req.body.amountInCents
       try {
         const paymentIntent = await stripe.paymentIntents.create({
-          amount: 1000,
+          amount: amountInCents,
           currency: "usd",
           payment_method_types: ["card"],
         });
