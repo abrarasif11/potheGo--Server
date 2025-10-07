@@ -6,6 +6,9 @@ const port = process.env.PORT || 6969;
 require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 dotenv.config();
+
+const stripe = require("stripe")(process.env.Payment_Key);
+
 // Middlewares
 app.use(cors());
 app.use(express.json());
@@ -71,7 +74,6 @@ async function run() {
         res.status(500).send({ message: "Failed to fetch parcels" });
       }
     });
-
 
     // Get a single parcel by its ID
     app.get("/parcels/:id", async (req, res) => {
