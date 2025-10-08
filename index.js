@@ -33,6 +33,7 @@ async function run() {
     const db = client.db("potheGoDB");
     const parcelCollection = db.collection("parcels");
     const paymentCollection = db.collection("payments");
+    const trackingCollection = db.collection("trackings");
 
     // get Parcel //
     app.get("/parcels", async (req, res) => {
@@ -169,6 +170,34 @@ async function run() {
       } catch (error) {
         console.error("Error confirming payment:", error);
         res.status(500).send({ message: "Failed to confirm payment" });
+      }
+    });
+
+    // -------- Tracking ------------ //
+    app.post("/tracking", async (req, res) => {
+      try {
+        const { parcelId, trackingId, status, location, note, updatedBy='' } =
+          req.body;
+
+        const trackDoc = {
+          parcelId: new ObjectId(parcelId),
+          trackingId,
+          status,
+          location: location || "",
+          note: note || "",
+          updatedBy,
+          updatedAt: new Date().toISOString(),
+        };
+
+        const result = await trackingCollection.insertOne(trackDoc);
+
+        res.status(201).send({
+          message: "Tracking update added",
+          insertedId: result.insertedId,
+        });
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({ message: "Failed to add tracking update" });
       }
     });
 
