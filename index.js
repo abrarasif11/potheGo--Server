@@ -32,6 +32,7 @@ async function run() {
     //DB Collections//
     const db = client.db("potheGoDB");
     const parcelCollection = db.collection("parcels");
+    const paymentCollection = db.collection("payments");
 
     // get Parcel //
     app.get("/parcels", async (req, res) => {
@@ -114,20 +115,51 @@ async function run() {
       }
     });
 
-    // payment intent //
-    app.post("/create-payment-intent", async (req, res) => {
-      const amountInCents = req.body.amountInCents
+    // ------- Payment --------- //
+    app.post("/payments", async (req, res) => {
       try {
-        const paymentIntent = await stripe.paymentIntents.create({
-          amount: amountInCents,
-          currency: "usd",
-          payment_method_types: ["card"],
+        const { parcelId, email, amount, paymentMethod, transactionId } =
+          req.body;
+
+        const updateResult = await parcelCollection.updateOne(
+          { _id: new ObjectId(parcelId) },
+          {
+            $set: {
+              status: "Paid",
+            },
+          }
+        );
+
+        if (updateResult.modifiedCount === 0) {
+          return res
+            .status(404)
+            .send({ message: "Parcel Not Found or Already Paid" });
+        }
+
+        const paymentDoc = {
+          parcelId,
+          email,
+          amount,
+          paymentMethod,
+          transactionId,
+          paid_at_string: new Date().toISOString(),
+          paid_at: new Date(),
+        };
+
+        const paymentResult = await paymentCollection.insertOne(paymentDoc);
+
+        res.status(201).send({
+          message: "Marked As Paid",
+          insertedId: paymentResult.insertedId,
         });
-        res.json({ clientSecret: paymentIntent.client_secret });
       } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error("Error confirming payment:", error);
+        res.status(500).send({ message: "Failed to confirm payment" });
       }
     });
+
+    // payment intent //
+    
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
