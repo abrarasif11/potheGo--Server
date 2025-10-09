@@ -52,14 +52,66 @@ async function run() {
       res.send(result);
     });
 
+    // ----------- Riders ------------- //
+    // Add a new rider
+    app.post("/riders", async (req, res) => {
+      try {
+        const rider = {
+          ...req.body,
+          status: req.body.status || "pending", // default pending
+          createdAt: new Date(),
+        };
+        const result = await riderCollection.insertOne(rider);
+        res.status(201).send(result);
+      } catch (error) {
+        console.error("Error adding rider:", error);
+        res.status(500).send({ message: "Failed to add rider" });
+      }
+    });
 
-   // ----------- Riders ------------- //
-   app.post('/riders', async(req,res) => {
-    const rider = req.body;
-    const result = await riderCollection.insertOne(rider)
-    res.send(result)
-   })
+    // Get all pending riders
+    app.get("/riders/pending", async (req, res) => {
+      try {
+        const pendingRiders = await riderCollection
+          .find({ status: { $regex: /^pending$/i } }) // case-insensitive
+          .sort({ createdAt: -1 })
+          .toArray();
+        res.status(200).send(pendingRiders);
+      } catch (error) {
+        console.error("Failed to load pending riders:", error);
+        res.status(500).send({ message: "Failed to load pending riders" });
+      }
+    });
 
+    // Approve rider
+    app.patch("/riders/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const { status } = req.body;
+        const result = await riderCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: { status } }
+        );
+        res.status(200).send(result);
+      } catch (error) {
+        console.error("Error updating rider:", error);
+        res.status(500).send({ message: "Failed to update rider" });
+      }
+    });
+
+    // Reject rider (delete)
+    app.delete("/riders/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const result = await riderCollection.deleteOne({
+          _id: new ObjectId(id),
+        });
+        res.status(200).send(result);
+      } catch (error) {
+        console.error("Error deleting rider:", error);
+        res.status(500).send({ message: "Failed to delete rider" });
+      }
+    });
 
     // ---------- Parcel ------------ //
 
