@@ -33,7 +33,26 @@ async function run() {
     const db = client.db("potheGoDB");
     const parcelCollection = db.collection("parcels");
     const paymentCollection = db.collection("payments");
-    const trackingCollection = db.collection("trackings");
+    const userCollection = db.collection("users");
+
+    // const trackingCollection = db.collection("trackings");
+
+    // --------- Users ---------- //
+    app.post("/users", async (req, res) => {
+      const email = req.body.email;
+      const userExists = await userCollection.findOne({ email });
+      if (userExists) {
+        return res
+          .status(200)
+          .send({ message: "User Already Exists", inserted: false });
+      }
+      const user = req.body;
+      const result = await userCollection.insertOne(user);
+      res.send(result);
+    });
+
+
+    // ---------- Parcel ------------ //
 
     // get Parcel //
     app.get("/parcels", async (req, res) => {
@@ -176,8 +195,14 @@ async function run() {
     // -------- Tracking ------------ //
     app.post("/tracking", async (req, res) => {
       try {
-        const { parcelId, trackingId, status, location, note, updatedBy='' } =
-          req.body;
+        const {
+          parcelId,
+          trackingId,
+          status,
+          location,
+          note,
+          updatedBy = "",
+        } = req.body;
 
         const trackDoc = {
           parcelId: new ObjectId(parcelId),
