@@ -53,6 +53,14 @@ async function run() {
     });
 
 
+   // ----------- Riders ------------- //
+   app.post('/riders', async(req,res) => {
+    const rider = req.body;
+    const result = await riderCollection.insertOne(rider)
+    res.send(result)
+   })
+
+
     // ---------- Parcel ------------ //
 
     // get Parcel //
