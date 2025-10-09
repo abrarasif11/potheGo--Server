@@ -73,7 +73,7 @@ async function run() {
     app.get("/riders/pending", async (req, res) => {
       try {
         const pendingRiders = await riderCollection
-          .find({ status: { $regex: /^pending$/i } }) // case-insensitive
+          .find({ status: { $regex: /^pending$/i } })
           .sort({ createdAt: -1 })
           .toArray();
         res.status(200).send(pendingRiders);
@@ -110,6 +110,31 @@ async function run() {
       } catch (error) {
         console.error("Error deleting rider:", error);
         res.status(500).send({ message: "Failed to delete rider" });
+      }
+    });
+
+    // Get active riders (with optional search by name/email)
+    app.get("/riders/active", async (req, res) => {
+      try {
+        const { search } = req.query;
+        let query = { status: "Active" };
+
+        if (search) {
+          query = {
+            ...query,
+            name: { $regex: search, $options: "i" }, 
+          };
+        }
+
+        const riders = await riderCollection
+          .find(query)
+          .sort({ createdAt: -1 }) // latest first
+          .toArray();
+
+        res.send(riders);
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: "Failed to fetch active riders" });
       }
     });
 
