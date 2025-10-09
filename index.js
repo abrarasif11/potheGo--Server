@@ -34,6 +34,7 @@ async function run() {
     const parcelCollection = db.collection("parcels");
     const paymentCollection = db.collection("payments");
     const userCollection = db.collection("users");
+    const riderCollection = db.collection("riders");
 
     // const trackingCollection = db.collection("trackings");
 
