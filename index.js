@@ -83,19 +83,32 @@ async function run() {
       }
     });
 
-    // Approve rider
+    // update rider status & user role
     app.patch("/riders/:id", async (req, res) => {
       try {
         const id = req.params.id;
         const { status } = req.body;
-        const result = await riderCollection.updateOne(
-          { _id: new ObjectId(id) },
-          { $set: { status } }
-        );
-        res.status(200).send(result);
+        if (!status) {
+          return res.status(400).send({ message: "Status is required" });
+        }
+        const query = { _id: new ObjectId(id) };
+        const rider = await riderCollection.findOne(query);
+        if (!rider) {
+          return res.status(404).send({ message: "Rider not found" });
+        }
+        const updateDoc = {
+          $set: { status: status },
+        };
+        const result = await riderCollection.updateOne(query, updateDoc);
+        if (status === "Active" && rider.email) {
+          const userQuery = { email: rider.email };
+          const userUpdate = { $set: { role: "rider" } };
+          await userCollection.updateOne(userQuery, userUpdate);
+        }
+        res.send({ success: true, message: "Rider status updated", result });
       } catch (error) {
-        console.error("Error updating rider:", error);
-        res.status(500).send({ message: "Failed to update rider" });
+        console.error(error);
+        res.status(500).send({ message: "Failed to update rider status" });
       }
     });
 
@@ -122,7 +135,7 @@ async function run() {
         if (search) {
           query = {
             ...query,
-            name: { $regex: search, $options: "i" }, 
+            name: { $regex: search, $options: "i" },
           };
         }
 
