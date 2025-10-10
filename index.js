@@ -52,6 +52,23 @@ async function run() {
       res.send(result);
     });
 
+    //  Search users by email (partial match allowed)
+    app.get("/users/search", async (req, res) => {
+      try {
+        const { email } = req.query;
+        const query = email ? { email: { $regex: email, $options: "i" } } : {};
+        const users = await userCollection
+          .find(query)
+          .sort({ createdAt: -1 })
+          .limit(10)
+          .toArray();
+        res.status(200).send(users);
+      } catch (error) {
+        console.error("Error searching users:", error);
+        res.status(500).send({ message: "Failed to search users" });
+      }
+    });
+
     // ----------- Riders ------------- //
     // Add a new rider
     app.post("/riders", async (req, res) => {
