@@ -52,23 +52,60 @@ async function run() {
       res.send(result);
     });
 
-    //  Search users by email (partial match allowed)
+    // Search user by email (partial match allowed)
     app.get("/users/search", async (req, res) => {
       try {
         const { email } = req.query;
-        const query = email ? { email: { $regex: email, $options: "i" } } : {};
-        const users = await userCollection
-          .find(query)
-          .sort({ createdAt: -1 })
-          .limit(10)
-          .toArray();
-        res.status(200).send(users);
+
+        if (!email) {
+          return res.status(400).send({ message: "Email is required" });
+        }
+        const query = {
+          email: { $regex: email, $options: "i" },
+        };
+        const users = await userCollection.find(query).limit(10).toArray();
+
+        if (users.length === 0) {
+          return res.status(404).send({ message: "No users found" });
+        }
+
+        res.send(users);
       } catch (error) {
-        console.error("Error searching users:", error);
-        res.status(500).send({ message: "Failed to search users" });
+        console.error(error);
+        res.status(500).send({ message: "Failed to search user" });
       }
     });
 
+    // Update user role by ID
+    app.patch("/users/:id/role", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const { role } = req.body;
+        if (!role) {
+          return res.status(400).send({ message: "Role is required" });
+        }
+        let query;
+        if (ObjectId.isValid(id)) {
+          query = { _id: new ObjectId(id) };
+        } else {
+          query = { _id: id };
+        }
+        const updateDoc = { $set: { role } };
+        const result = await userCollection.updateOne(query, updateDoc);
+        if (result.matchedCount === 0) {
+          return res.status(404).send({ message: "User not found" });
+        }
+        res.send({
+          success: true,
+          message: `User role updated to ${role}`,
+          result,
+        });
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: "Failed to update user role" });
+      }
+    });
+    
     // ----------- Riders ------------- //
     // Add a new rider
     app.post("/riders", async (req, res) => {
