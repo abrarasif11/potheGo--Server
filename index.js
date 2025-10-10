@@ -105,8 +105,34 @@ async function run() {
         res.status(500).send({ message: "Failed to update user role" });
       }
     });
-    
+
+    // GET user role by email (using route parameter)
+    app.get("/users/:email/role", async (req, res) => {
+      try {
+        const { email } = req.params;
+
+        if (!email) {
+          return res.status(400).send({ message: "Email is required" });
+        }
+
+        const user = await userCollection.findOne(
+          { email: email },
+          { projection: { role: 1, _id: 0 } } 
+        );
+
+        if (!user) {
+          return res.status(404).send({ message: "User not found" });
+        }
+
+        res.send({ email, role: user.role || "user" });
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: "Failed to get user role" });
+      }
+    });
+
     // ----------- Riders ------------- //
+    
     // Add a new rider
     app.post("/riders", async (req, res) => {
       try {
