@@ -117,7 +117,7 @@ async function run() {
 
         const user = await userCollection.findOne(
           { email: email },
-          { projection: { role: 1, _id: 0 } } 
+          { projection: { role: 1, _id: 0 } }
         );
 
         if (!user) {
@@ -132,7 +132,7 @@ async function run() {
     });
 
     // ----------- Riders ------------- //
-    
+
     // Add a new rider
     app.post("/riders", async (req, res) => {
       try {
@@ -228,6 +228,28 @@ async function run() {
       } catch (error) {
         console.error(error);
         res.status(500).send({ message: "Failed to fetch active riders" });
+      }
+    });
+
+    // GET /riders/available?region=Dhaka
+    app.get("/riders/available", async (req, res) => {
+      try {
+        const region = req.query.region;
+        if (!region)
+          return res.status(400).json({ error: "Region is required" });
+
+        // Fetch active riders for this region
+        const availableRiders = await riderCollection
+          .find({
+            region,
+            status: "Active",
+          })
+          .toArray();
+
+        res.json(availableRiders);
+      } catch (error) {
+        console.error("Error fetching available riders:", error);
+        res.status(500).json({ error: error.message });
       }
     });
 
