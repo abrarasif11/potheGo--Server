@@ -336,6 +336,57 @@ async function run() {
       }
     });
 
+    // PATCH: Assign a rider to a parcel
+    app.patch("/parcels/:id/assign", async (req, res) => {
+      try {
+        const parcelId = req.params.id;
+        const { riderEmail, riderName, rider } = req.body;
+        const assignedRiderEmail =
+          riderEmail || rider?.email || rider?.riderEmail;
+        const assignedRiderName = riderName || rider?.name || rider?.riderName;
+
+        if (!assignedRiderEmail || !assignedRiderName) {
+          return res.status(400).send({
+            success: false,
+            message: "Rider name and email are required",
+          });
+        }
+        const result = await parcelCollection.updateOne(
+          { _id: new ObjectId(parcelId) },
+          {
+            $set: {
+              assignedRiderEmail,
+              assignedRiderName,
+              deliveryStatus: "Rider Assigned",
+              updatedAt: new Date(),
+            },
+          }
+        );
+        if (result.modifiedCount === 0) {
+          return res.status(404).send({
+            success: false,
+            message: "Parcel not found or already assigned",
+          });
+        }
+        const updatedParcel = await parcelCollection.findOne({
+          _id: new ObjectId(parcelId),
+        });
+
+        res.send({
+          success: true,
+          message: "Rider assigned successfully",
+          parcel: updatedParcel,
+        });
+      } catch (error) {
+        console.error("Error assigning rider:", error);
+        res.status(500).send({
+          success: false,
+          message: "Internal server error",
+          error: error.message,
+        });
+      }
+    });
+
     // ------- Payment --------- //
 
     app.get("/payments", async (req, res) => {
