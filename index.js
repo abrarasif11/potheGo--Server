@@ -255,12 +255,6 @@ async function run() {
 
     // ---------- Parcel ------------ //
 
-    // get Parcel //
-    app.get("/parcels", async (req, res) => {
-      const parcels = await parcelCollection.find().toArray();
-      res.send(parcels);
-    });
-
     // create a parcel
     app.post("/parcels", async (req, res) => {
       try {
@@ -282,18 +276,20 @@ async function run() {
     app.get("/parcels", async (req, res) => {
       try {
         const email = req.query.email;
+        let query = {};
 
-        const filter = email ? { createdBy: email } : {};
+        if (email) {
+          query = { createdBy: email };
+        }
 
         const parcels = await parcelCollection
-          .find(filter)
+          .find(query)
           .sort({ createdAt: -1 })
           .toArray();
-
-        res.send(parcels);
+        res.json(parcels);
       } catch (error) {
-        console.error("Error fetching parcels:", error);
-        res.status(500).send({ message: "Failed to fetch parcels" });
+        console.error("Fetch parcels error:", error);
+        res.status(500).json({ message: "Failed to fetch parcels" });
       }
     });
 
