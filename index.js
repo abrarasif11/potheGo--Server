@@ -253,7 +253,7 @@ async function run() {
       }
     });
 
-    app.get("/rider/pendingDeliveries", async (req, res) => {
+    app.get("/riders/pendingDeliveries", async (req, res) => {
       try {
         const { email } = req.query;
         if (!email) {
@@ -351,6 +351,27 @@ async function run() {
       } catch (error) {
         console.error("Error deleting parcel:", error);
         res.status(500).send({ message: "Failed to delete parcel" });
+      }
+    });
+
+    app.patch("/parcels/:id/status", async (req, res) => {
+      const parcelId = req.params.id;
+      const { status } = req.body;
+
+      try {
+        const result = await parcelCollection.updateOne(
+          { _id: new ObjectId(parcelId) },
+          { $set: { deliveryStatus: status } }
+        );
+
+        if (result.modifiedCount === 0) {
+          return res.status(404).send({ message: "Parcel not found" });
+        }
+
+        res.send({ success: true, message: "Status updated" });
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: "Failed to update status" });
       }
     });
 
