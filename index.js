@@ -253,6 +253,28 @@ async function run() {
       }
     });
 
+    app.get("/rider/pendingDeliveries", async (req, res) => {
+      try {
+        const { email } = req.query;
+        if (!email) {
+          return res.status(400).send({ message: "Rider email is required" });
+        }
+        const query = {
+          assignedRiderEmail: email,
+          deliveryStatus: { $in: ["Rider Assigned", "In Transit"] },
+        };
+        const options = { sort: { createdAt: -1 } };
+
+        const pendingParcels = await parcelCollection
+          .find(query, options)
+          .toArray();
+        res.status(200).send(pendingParcels);
+      } catch (error) {
+        console.error("Error fetching pending deliveries:", error);
+        res.status(500).send({ message: "Failed to fetch pending deliveries" });
+      }
+    });
+
     // ---------- Parcel ------------ //
 
     // create a parcel
