@@ -275,6 +275,39 @@ async function run() {
       }
     });
 
+    // GET: Load completed parcel deliveries for a rider
+    app.get("/rider/completed-parcels", async (req, res) => {
+      try {
+        const email = req.query.email;
+
+        if (!email) {
+          return res.status(400).send({ message: "Rider email is required" });
+        }
+
+        const query = {
+          assignedRiderEmail: email,
+          deliveryStatus: {
+            $in: ["Delivered", "Service Center Delivered"],
+          },
+        };
+
+        const options = {
+          sort: { createdAt: -1 },
+        };
+
+        const completedParcels = await parcelCollection
+          .find(query, options)
+          .toArray();
+
+        res.send(completedParcels);
+      } catch (error) {
+        console.error("Error loading completed parcels:", error);
+        res
+          .status(500)
+          .send({ message: "Failed to load completed deliveries" });
+      }
+    });
+
     // ---------- Parcel ------------ //
 
     // create a parcel
