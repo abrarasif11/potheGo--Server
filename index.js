@@ -391,17 +391,38 @@ async function run() {
       const parcelId = req.params.id;
       const { status } = req.body;
 
+      if (!status) {
+        return res.status(400).send({ message: "Status is required" });
+      }
+
+      const updateDoc = { deliveryStatus: status };
+
+      if (status === "In Transit") {
+        updateDoc.picked_at = new Date().toLocaleString("en-BD", {
+          dateStyle: "medium",
+          timeStyle: "short",
+        });
+      } else if (status === "Delivered") {
+        updateDoc.delivered_at = new Date().toLocaleString("en-BD", {
+          dateStyle: "medium",
+          timeStyle: "short",
+        });
+      }
+
       try {
-        const result = await parcelCollection.updateOne(
-          { _id: new ObjectId(parcelId) },
-          { $set: { deliveryStatus: status } }
-        );
+        const query = ObjectId.isValid(parcelId)
+          ? { _id: new ObjectId(parcelId) }
+          : { _id: parcelId };
+
+        const result = await parcelCollection.updateOne(query, {
+          $set: updateDoc,
+        });
 
         if (result.modifiedCount === 0) {
           return res.status(404).send({ message: "Parcel not found" });
         }
 
-        res.send({ success: true, message: "Status updated" });
+        res.status(200).send({ success: true, message: "Status updated" });
       } catch (error) {
         console.error(error);
         res.status(500).send({ message: "Failed to update status" });
