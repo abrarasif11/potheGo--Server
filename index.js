@@ -35,8 +35,7 @@ async function run() {
     const paymentCollection = db.collection("payments");
     const userCollection = db.collection("users");
     const riderCollection = db.collection("riders");
-
-    // const trackingCollection = db.collection("trackings");
+    const trackingCollection = db.collection("trackings");
 
     // --------- Users ---------- //
     app.post("/users", async (req, res) => {
@@ -138,7 +137,7 @@ async function run() {
       try {
         const rider = {
           ...req.body,
-          status: req.body.status || "pending", // default pending
+          status: req.body.status || "pending",
           createdAt: new Date(),
         };
         const result = await riderCollection.insertOne(rider);
@@ -221,7 +220,7 @@ async function run() {
 
         const riders = await riderCollection
           .find(query)
-          .sort({ createdAt: -1 }) // latest first
+          .sort({ createdAt: -1 })
           .toArray();
 
         res.send(riders);
@@ -584,6 +583,34 @@ async function run() {
         console.error(err);
         res.status(500).send({ message: "Failed to add tracking update" });
       }
+    });
+
+    app.get("/trackings/:trackingId", async (req, res) => {
+      const trackingId = req.params.trackingId;
+
+      const updates = await trackingCollection
+        .find({ tracking_id: trackingId })
+        .sort({ timestamp: 1 })
+        .toArray();
+
+      res.json(updates);
+    });
+
+    app.post("/trackings", async (req, res) => {
+      const update = req.body;
+
+      update.timestamp = new Date().toLocaleString("en-BD", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      });
+      if (!update.tracking_id || !update.status) {
+        return res
+          .status(400)
+          .json({ message: "tracking_id and status are required." });
+      }
+
+      const result = await trackingCollection.insertOne(update);
+      res.status(201).json(result);
     });
 
     // payment intent //
