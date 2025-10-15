@@ -61,7 +61,6 @@ async function run() {
         const user = await userCollection.findOne({ email });
         if (!user) return res.status(404).send({ message: "User not found" });
 
-      
         res.send({
           name: user.name,
           email: user.email,
@@ -329,6 +328,33 @@ async function run() {
         res
           .status(500)
           .send({ message: "Failed to load completed deliveries" });
+      }
+    });
+
+    // GET rider profile by email
+    app.get("/riders/profile", async (req, res) => {
+      try {
+        const email = req.query.email;
+        if (!email)
+          return res.status(400).send({ message: "Email is required" });
+
+        const rider = await riderCollection.findOne({ email });
+        if (!rider) return res.status(404).send({ message: "Rider not found" });
+
+        res.send({
+          name: rider.name,
+          age: rider.age,
+          email: rider.email,
+          region: rider.region,
+          nid: rider.nid,
+          contact: rider.contact,
+          warehouse: rider.warehouse,
+          status: rider.status,
+          createdAt: rider.createdAt,
+        });
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: "Failed to fetch rider profile" });
       }
     });
 
