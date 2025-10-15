@@ -51,6 +51,31 @@ async function run() {
       res.send(result);
     });
 
+    // GET /users/profile?email=user@example.com
+    app.get("/users/profile", async (req, res) => {
+      try {
+        const email = req.query.email;
+        if (!email)
+          return res.status(400).send({ message: "Email is required" });
+
+        const user = await userCollection.findOne({ email });
+        if (!user) return res.status(404).send({ message: "User not found" });
+
+      
+        res.send({
+          name: user.name,
+          email: user.email,
+          image: user.image || null,
+          role: user.role || "user",
+          createdAt: user.createdAt,
+          last_log_in: user.last_log_in,
+        });
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: "Failed to fetch user profile" });
+      }
+    });
+
     // Search user by email (partial match allowed)
     app.get("/users/search", async (req, res) => {
       try {
@@ -649,6 +674,82 @@ async function run() {
       ];
       const result = await parcelCollection.aggregate(pipeline).toArray();
       res.send(result);
+    });
+
+    // ---------- User Dashboard APi's --------- //
+    // 1️⃣ Get User Info by Email
+    app.get("/users/:email", async (req, res) => {
+      const { email } = req.params;
+      try {
+        const user = await userCollection.findOne({ email });
+        if (!user) return res.status(404).send({ message: "User not found" });
+        res.send(user);
+      } catch (error) {
+        console.error("Error fetching user:", error);
+        res.status(500).send({ message: "Failed to fetch user" });
+      }
+    });
+
+    // 2️⃣ Get User Parcels
+    app.get("/parcels/user/:email", async (req, res) => {
+      const { email } = req.params;
+      try {
+        const parcels = await parcelCollection
+          .find({ createdBy: email })
+          .sort({ createdAt: -1 })
+          .toArray();
+        res.send(parcels);
+      } catch (error) {
+        console.error("Error fetching parcels:", error);
+        res.status(500).send({ message: "Failed to fetch parcels" });
+      }
+    });
+
+    // 3️⃣ Get User Payment History
+    app.get("/payments/user/:email", async (req, res) => {
+      const { email } = req.params;
+      try {
+        const payments = await paymentCollection
+          .find({ email })
+          .sort({ paid_at: -1 })
+          .toArray();
+        res.send(payments);
+      } catch (error) {
+        console.error("Error fetching payments:", error);
+        res.status(500).send({ message: "Failed to fetch payments" });
+      }
+    });
+
+    // 4️⃣ Dashboard Summary for User
+    app.get("/dashboard/user/:email/summary", async (req, res) => {
+      const { email } = req.params;
+
+      try {
+        const parcels = await parcelCollection
+          .find({ createdBy: email })
+          .toArray();
+        const payments = await paymentCollection.find({ email }).toArray();
+
+        const totalParcels = parcels.length;
+        const paidParcels = parcels.filter((p) => p.status === "Paid").length;
+        const pendingDeliveries = parcels.filter((p) =>
+          ["Rider Assigned", "In Transit"].includes(p.deliveryStatus)
+        ).length;
+        const totalSpent = payments.reduce(
+          (sum, p) => sum + (p.amount || 0),
+          0
+        );
+
+        res.send({
+          totalParcels,
+          paidParcels,
+          pendingDeliveries,
+          totalSpent,
+        });
+      } catch (error) {
+        console.error("Error fetching dashboard summary:", error);
+        res.status(500).send({ message: "Failed to fetch dashboard summary" });
+      }
     });
 
     // Send a ping to confirm a successful connection
