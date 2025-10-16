@@ -26,6 +26,7 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
+    // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
     //DB Collections//
@@ -56,8 +57,10 @@ async function run() {
         const email = req.query.email;
         if (!email)
           return res.status(400).send({ message: "Email is required" });
+
         const user = await userCollection.findOne({ email });
         if (!user) return res.status(404).send({ message: "User not found" });
+
         res.send({
           name: user.name,
           email: user.email,
@@ -76,6 +79,7 @@ async function run() {
     app.get("/users/search", async (req, res) => {
       try {
         const { email } = req.query;
+
         if (!email) {
           return res.status(400).send({ message: "Email is required" });
         }
@@ -87,6 +91,7 @@ async function run() {
         if (users.length === 0) {
           return res.status(404).send({ message: "No users found" });
         }
+
         res.send(users);
       } catch (error) {
         console.error(error);
@@ -128,16 +133,20 @@ async function run() {
     app.get("/users/:email/role", async (req, res) => {
       try {
         const { email } = req.params;
+
         if (!email) {
           return res.status(400).send({ message: "Email is required" });
         }
+
         const user = await userCollection.findOne(
           { email: email },
           { projection: { role: 1, _id: 0 } }
         );
+
         if (!user) {
           return res.status(404).send({ message: "User not found" });
         }
+
         res.send({ email, role: user.role || "user" });
       } catch (error) {
         console.error(error);
@@ -146,6 +155,7 @@ async function run() {
     });
 
     // ----------- Riders ------------- //
+
     // Add a new rider
     app.post("/riders", async (req, res) => {
       try {
@@ -231,6 +241,7 @@ async function run() {
             name: { $regex: search, $options: "i" },
           };
         }
+
         const riders = await riderCollection
           .find(query)
           .sort({ createdAt: -1 })
@@ -249,12 +260,15 @@ async function run() {
         const region = req.query.region;
         if (!region)
           return res.status(400).json({ error: "Region is required" });
+
+        // Fetch active riders for this region
         const availableRiders = await riderCollection
           .find({
             region,
             status: "Active",
           })
           .toArray();
+
         res.json(availableRiders);
       } catch (error) {
         console.error("Error fetching available riders:", error);
@@ -273,6 +287,7 @@ async function run() {
           deliveryStatus: { $in: ["Rider Assigned", "In Transit"] },
         };
         const options = { sort: { createdAt: -1 } };
+
         const pendingParcels = await parcelCollection
           .find(query, options)
           .toArray();
@@ -345,6 +360,8 @@ async function run() {
       try {
         const newParcel = req.body;
         const result = await parcelCollection.insertOne(newParcel);
+
+        // Send proper response
         res.status(201).send({
           success: true,
           insertedId: result.insertedId,
@@ -378,6 +395,7 @@ async function run() {
     app.get("/parcels/:id", async (req, res) => {
       try {
         const id = req.params.id;
+
         const query = { _id: new ObjectId(id) };
         const parcel = await parcelCollection.findOne(query);
         if (!parcel) {
@@ -399,6 +417,7 @@ async function run() {
         if (result.deletedCount === 0) {
           return res.status(404).send({ message: "Parcel not found" });
         }
+
         res.send({ message: "Parcel deleted successfully" });
       } catch (error) {
         console.error("Error deleting parcel:", error);
@@ -414,6 +433,7 @@ async function run() {
         return res.status(400).send({ message: "Status is required" });
       }
       const updateDoc = { deliveryStatus: status };
+
       if (status === "In Transit") {
         updateDoc.picked_at = new Date().toLocaleString("en-BD", {
           dateStyle: "medium",
@@ -429,6 +449,7 @@ async function run() {
         const query = ObjectId.isValid(parcelId)
           ? { _id: new ObjectId(parcelId) }
           : { _id: parcelId };
+
         const result = await parcelCollection.updateOne(query, {
           $set: updateDoc,
         });
@@ -477,7 +498,6 @@ async function run() {
         const updatedParcel = await parcelCollection.findOne({
           _id: new ObjectId(parcelId),
         });
-
         res.send({
           success: true,
           message: "Rider assigned successfully",
@@ -527,7 +547,6 @@ async function run() {
       try {
         const { parcelId, email, amount, paymentMethod, transactionId } =
           req.body;
-
         const updateResult = await parcelCollection.updateOne(
           { _id: new ObjectId(parcelId) },
           {
@@ -536,13 +555,11 @@ async function run() {
             },
           }
         );
-
         if (updateResult.modifiedCount === 0) {
           return res
             .status(404)
             .send({ message: "Parcel Not Found or Already Paid" });
         }
-
         const paymentDoc = {
           parcelId,
           email,
@@ -552,9 +569,7 @@ async function run() {
           paid_at_string: new Date().toISOString(),
           paid_at: new Date(),
         };
-
         const paymentResult = await paymentCollection.insertOne(paymentDoc);
-
         res.status(201).send({
           message: "Marked As Paid",
           insertedId: paymentResult.insertedId,
@@ -622,7 +637,6 @@ async function run() {
           .status(400)
           .json({ message: "tracking_id and status are required." });
       }
-
       const result = await trackingCollection.insertOne(update);
       res.status(201).json(result);
     });
@@ -666,7 +680,8 @@ async function run() {
     });
 
     // ---------- User Dashboard APi's --------- //
-    //  Get User Info by Email
+
+    // Get User Info by Email
     app.get("/users/:email", async (req, res) => {
       const { email } = req.params;
       try {
@@ -679,7 +694,7 @@ async function run() {
       }
     });
 
-    //  Get User Parcels
+    // Get User Parcels
     app.get("/parcels/user/:email", async (req, res) => {
       const { email } = req.params;
       try {
@@ -694,7 +709,7 @@ async function run() {
       }
     });
 
-    //  Get User Payment History
+    // Get User Payment History
     app.get("/payments/user/:email", async (req, res) => {
       const { email } = req.params;
       try {
@@ -728,7 +743,6 @@ async function run() {
           (sum, p) => sum + (p.amount || 0),
           0
         );
-
         res.send({
           totalParcels,
           paidParcels,
