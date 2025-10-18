@@ -18,5 +18,11 @@
     "mongodb": "^6.7.0",
     "nodemon": "^3.1.10",
     "stripe": "^18.0.0"
+  },
+  "builds": [
+  {
+    "src": "index.js",
+    "use": "@vercel/node"
   }
+]
 }
